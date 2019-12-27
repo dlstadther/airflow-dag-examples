@@ -18,8 +18,6 @@ default_args = {
 dag = DAG(
     'k8s_pod_operator_sample', default_args=default_args, schedule_interval=timedelta(minutes=10))
 
-start = DummyOperator(task_id='run_this_first', dag=dag)
-
 passing = KubernetesPodOperator(
     image="python:3.6",
     cmds=["python", "-c"],
@@ -41,6 +39,3 @@ failing = KubernetesPodOperator(
     get_logs=True,
     dag=dag
 )
-
-passing.set_upstream(start)
-failing.set_upstream(start)
