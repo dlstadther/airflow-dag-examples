@@ -5,7 +5,6 @@ from airflow.operators.dummy_operator import DummyOperator
 
 default_args = {
     'owner': 'airflow',
-    'namespace': 'default',
     'depends_on_past': False,
     'start_date': datetime.utcnow(),
     'email': ['airflow@example.com'],
@@ -16,26 +15,35 @@ default_args = {
 }
 
 dag = DAG(
-    'k8s_pod_operator_sample', default_args=default_args, schedule_interval=timedelta(minutes=10))
+    'kubernetes_sample', default_args=default_args, schedule_interval=timedelta(minutes=10))
+
+start = DummyOperator(task_id='run_this_first', dag=dag)
 
 passing = KubernetesPodOperator(
-    image="python:3.6",
-    cmds=["python", "-c"],
-    arguments=["print('hello world')"],
-    labels={"foo": "bar"},
-    name="passing-test",
-    task_id="passing-task",
+    namespace='default',
+    image='python:3.6',
+    cmds=['python', '-c'],
+    arguments=['print("hello world")'],
+    labels={'foo': 'bar'},
+    name='passing-test',
+    task_id='passing-task',
     get_logs=True,
-    dag=dag
+    dag=dag,
+    in_cluster=True
 )
 
 failing = KubernetesPodOperator(
-    image="ubuntu:16.04",
-    cmds=["python", "-c"],
-    arguments=["print('hello world')"],
-    labels={"foo": "bar"},
-    name="fail",
-    task_id="failing-task",
+    namespace='default',
+    image='ubuntu:16.04',
+    cmds=['python', '-c'],
+    arguments=['print("hello world")'],
+    labels={'foo': 'bar'},
+    name='fail',
+    task_id='failing-task',
     get_logs=True,
-    dag=dag
+    dag=dag,
+    in_cluster=True
 )
+
+passing.set_upstream(start)
+failing.set_upstream(start)
